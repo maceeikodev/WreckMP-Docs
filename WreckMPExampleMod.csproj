@@ -11,6 +11,7 @@
     <AssemblyName>WreckMPExampleMod</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <LangVersion>10</LangVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
   </PropertyGroup>
@@ -40,18 +41,26 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\My Summer Car\mysummercar_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="MSCLoader">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\My Summer Car\mysummercar_Data\Managed\MSCLoader.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\My Summer Car\mysummercar_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="cInput">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\My Summer Car\mysummercar_Data\Managed\cInput.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="PlayMaker">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\My Summer Car\mysummercar_Data\Managed\PlayMaker.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="WreckMP">
+      <HintPath>..\..\..\..\Downloads\Manual WreckMP update package v0.2.7-5271-0-2-7-1727615725\WreckMP.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
