@@ -60,7 +60,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="WreckMP">
-      <HintPath>..\..\..\..\Downloads\Manual WreckMP update package v0.2.7-5271-0-2-7-1727615725\WreckMP.dll</HintPath>
+      <HintPath>..\BeerMP\BeerMP-Remastered\BeerMP\bin\Debug\WreckMP.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
