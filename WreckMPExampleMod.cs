@@ -9,7 +9,7 @@ public class WreckMPExampleMod : Mod
     public override string ID => "WreckMPExampleMod";
     public override string Name => "WreckMP example mod";
     public override string Author => "Honeycomb936 and Maceeiko";
-    public override string Version => "1.0";
+    public override string Version => "1.0.1";
     public override string Description => "Short demonstration on how to sync a mod for WreckMP multiplayer";
 
     static bool MPPresent;
@@ -111,9 +111,10 @@ public class WreckMPExampleMod : Mod
         e.Send(p);
     }
 
-    private void ReceiveSpawnCube(WreckMP.GameEventReader obj)
+    private void ReceiveSpawnCube(object obj)
     {
-        var cubePosition = obj.ReadVector3();
+        var packet = obj as WreckMP.GameEventReader;
+        var cubePosition = packet.ReadVector3();
         MakeCube(cubePosition, false);
     }
 
@@ -133,17 +134,18 @@ public class WreckMPExampleMod : Mod
         e.Send(p, user);
     }
 
-    private void ReceiveInitialSync(WreckMP.GameEventReader obj)
+    private void ReceiveInitialSync(object obj)
     {
-        var count = obj.ReadInt32();
+        var packet = obj as WreckMP.GameEventReader;
+        var count = packet.ReadInt32();
         for (int i = 0; i < count; i++)
         {
-            var cube = MakeCube(obj.ReadVector3(), false);
+            var cube = MakeCube(packet.ReadVector3(), false);
             cube.material.color = new Color
             {
-                r = obj.ReadSingle(),
-                g = obj.ReadSingle(),
-                b = obj.ReadSingle()
+                r = packet.ReadSingle(),
+                g = packet.ReadSingle(),
+                b = packet.ReadSingle()
             };
         }
     }
@@ -159,8 +161,9 @@ public class WreckMPExampleMod : Mod
         e.Send(writer);
     }
 
-    void ReceiveColorUpdate(WreckMP.GameEventReader packet)
+    void ReceiveColorUpdate(object obj)
     {
+        var packet = obj as WreckMP.GameEventReader;
         int cubeIndex = packet.ReadInt32();
         var color = new Color
         {
