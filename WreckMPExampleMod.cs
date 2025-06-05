@@ -1,6 +1,7 @@
 ﻿using MSCLoader;
 using System.Collections.Generic;
 using UnityEngine;
+using WreckAPI;
 
 namespace WreckMPExampleMod;
 
@@ -9,30 +10,37 @@ public class WreckMPExampleMod : Mod
     public override string ID => "WreckMPExampleMod";
     public override string Name => "WreckMP example mod";
     public override string Author => "Honeycomb936 and Maceeiko";
-    public override string Version => "1.0.1";
+    public override string Version => "1.0.2";
     public override string Description => "Short demonstration on how to sync a mod for WreckMP multiplayer";
-
-    static bool MPPresent;
 
     List<MeshRenderer> cube;
     Transform player;
 
-    object colorEvent, spawnCubeEvent, initialSyncEvent;
+    GameEvent colorEvent, spawnCubeEvent, initialSyncEvent;
 
     public override void ModSetup() 
     {
+        SetupFunction(Setup.OnMenuLoad, () =>
+        {
+            ModConsole.Log($"WreckMP example mod ready for {(WreckMPGlobals.IsMultiplayerSession ? "multi" : "single")}player!");
+        });
         SetupFunction(Setup.OnLoad, Mod_OnLoad);
         SetupFunction(Setup.Update, Mod_Update);
     }
 
     void Mod_OnLoad()
     {
-        MPPresent = System.Environment.GetEnvironmentVariable("WreckMP-Present") != null;
-
         cube = new List<MeshRenderer>();
         player = GameObject.Find("PLAYER").transform;
 
-        if (MPPresent) InitMP();
+        colorEvent = new GameEvent("example_colorUpdate", ReceiveColorUpdate);
+        spawnCubeEvent = new GameEvent("example_spawnCube", ReceiveSpawnCube);
+        initialSyncEvent = new GameEvent("example_initSync", ReceiveInitialSync);
+
+        if (WreckMPGlobals.IsHost)
+        {
+            WreckMPGlobals.OnMemberReady(SendInitialSync);
+        }
     }
 
     void Mod_Update()
@@ -57,16 +65,20 @@ public class WreckMPExampleMod : Mod
 
     MeshRenderer MakeCube(Vector3 position, bool sendEvent)
     {
-        // Put mesh in child so it's jumpable by player
         var cube = new GameObject("cube(xxxxx)");
         cube.transform.position = position;
+
         var rb = cube.AddComponent<Rigidbody>();
         rb.mass = 10;
+        rb.RegisterRigidbody($"grabbable cube index {this.cube.Count}".GetHashCode());
+
         var col = cube.AddComponent<BoxCollider>();
         col.size = Vector3.one * 0.5f;
         col.isTrigger = true;
+
         cube.MakePickable();
 
+        // Put mesh in child so it's jumpable by player
         var mesh = GameObject.CreatePrimitive(PrimitiveType.Cube);
         mesh.transform.localScale = Vector3.one * 0.5f;
         mesh.transform.parent = cube.transform;
@@ -74,12 +86,20 @@ public class WreckMPExampleMod : Mod
         var mr = mesh.GetComponent<MeshRenderer>();
         this.cube.Add(mr);
 
-        if (MPPresent)
+        if (sendEvent)
         {
-            if (sendEvent) SendSpawnCube(position);
-            RegisterCube(rb, this.cube.Count);
+            using var p = spawnCubeEvent.Writer();
+            p.Write(position);
+            p.Send();
         }
+
         return mr;
+    }
+
+    void ReceiveSpawnCube(GameEventReader packet)
+    {
+        var cubePosition = packet.ReadVector3();
+        MakeCube(cubePosition, false);
     }
 
     void RandomizeCubeColor(int index)
@@ -87,41 +107,29 @@ public class WreckMPExampleMod : Mod
         var col = new Color(Random.Range(0, 1f), Random.Range(0, 1f), Random.Range(0, 1f), 1f);
         cube[index].material.color = col;
 
-        if (MPPresent) SendColorUpdate(index, col.r, col.g, col.b);
+        using var writer = colorEvent.Writer();
+        writer.Write(index);
+        writer.Write(col.r);
+        writer.Write(col.g);
+        writer.Write(col.b);
+        writer.Send();
     }
 
-    // MP METHODS
-    void InitMP()
+    void ReceiveColorUpdate(GameEventReader packet)
     {
-        colorEvent = new WreckMP.GameEvent("example_colorUpdate", ReceiveColorUpdate);
-        spawnCubeEvent = new WreckMP.GameEvent("example_spawnCube", ReceiveSpawnCube);
-        initialSyncEvent = new WreckMP.GameEvent("example_initSync", ReceiveInitialSync);
-
-        if (WreckMP.WreckMPGlobals.IsHost)
+        int cubeIndex = packet.ReadInt32();
+        var color = new Color
         {
-            WreckMP.WreckMPGlobals.OnMemberReady.Add(SendInitialSync);
-        }
-    }
-
-    void SendSpawnCube(Vector3 cubePosition)
-    {
-        var e = spawnCubeEvent as WreckMP.GameEvent;
-        using var p = e.Writer();
-        p.Write(cubePosition);
-        e.Send(p);
-    }
-
-    private void ReceiveSpawnCube(object obj)
-    {
-        var packet = obj as WreckMP.GameEventReader;
-        var cubePosition = packet.ReadVector3();
-        MakeCube(cubePosition, false);
+            r = packet.ReadSingle(),
+            g = packet.ReadSingle(),
+            b = packet.ReadSingle()
+        };
+        cube[cubeIndex].material.color = color;
     }
 
     void SendInitialSync(ulong user)
     {
-        var e = initialSyncEvent as WreckMP.GameEvent;
-        using var p = e.Writer();
+        using var p = initialSyncEvent.Writer();
         p.Write(cube.Count);
         for (int i = 0; i < cube.Count; i++)
         {
@@ -131,12 +139,11 @@ public class WreckMPExampleMod : Mod
             p.Write(col.g);
             p.Write(col.b);
         }
-        e.Send(p, user);
+        p.Send(user);
     }
 
-    private void ReceiveInitialSync(object obj)
+    void ReceiveInitialSync(GameEventReader packet)
     {
-        var packet = obj as WreckMP.GameEventReader;
         var count = packet.ReadInt32();
         for (int i = 0; i < count; i++)
         {
@@ -148,34 +155,5 @@ public class WreckMPExampleMod : Mod
                 b = packet.ReadSingle()
             };
         }
-    }
-
-    void SendColorUpdate(int cubeIndex, float r, float g, float b) 
-    {
-        var e = colorEvent as WreckMP.GameEvent;
-        using var writer = e.Writer();
-        writer.Write(cubeIndex);
-        writer.Write(r);
-        writer.Write(g);
-        writer.Write(b);
-        e.Send(writer);
-    }
-
-    void ReceiveColorUpdate(object obj)
-    {
-        var packet = obj as WreckMP.GameEventReader;
-        int cubeIndex = packet.ReadInt32();
-        var color = new Color
-        {
-            r = packet.ReadSingle(),
-            g = packet.ReadSingle(),
-            b = packet.ReadSingle()
-        };
-        cube[cubeIndex].material.color = color;
-    }
-
-    void RegisterCube(Rigidbody rb, int i)
-    {
-        WreckMP.NetRigidbodyManager.AddRigidbody(rb, $"grabbable cube index {i}".GetHashCode());
     }
 }
