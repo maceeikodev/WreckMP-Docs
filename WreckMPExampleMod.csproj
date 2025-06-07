@@ -59,8 +59,8 @@
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\My Summer Car\mysummercar_Data\Managed\PlayMaker.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="WreckMP">
-      <HintPath>..\BeerMP\BeerMP-Remastered\BeerMP\bin\Debug\WreckMP.dll</HintPath>
+    <Reference Include="WreckMP_Ref">
+      <HintPath>..\maceeikodev\WreckMP_Ref\bin\Release\WreckMP_Ref.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
